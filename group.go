@@ -40,13 +40,9 @@ var (
 	groups = make(map[string]*Group)
 )
 
-// NewGroup 函数创建一个缓存空间并创建并保存为 Group
-// name: 名称
-// cacheBytes: 最大可缓存的带宽
-// getter: 远程数据加载方法
 func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 	if getter == nil {
-		panic("nil Getter") // 当 Getter 为 nil 时不合法
+		panic("nil Getter")
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -56,13 +52,10 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 		mainCache: cache{cacheBytes: cacheBytes},
 		loader:    &singleflight.Group{},
 	}
-	groups[name] = g // 将 Group 存储为全局的缓存编组
+	groups[name] = g
 	return g
 }
 
-// GetGroup 函数根据键获取缓存空间 Group
-// key: 缓存名称
-// g: 返回与名称对应的 Group
 func GetGroup(key string) *Group {
 	mu.RLock()
 	g := groups[key]
@@ -71,7 +64,6 @@ func GetGroup(key string) *Group {
 }
 
 // RegisterPeers 方法将实现了 PeerPicker 接口的 HTTPPool 注入到 Group 中
-// 这种模式支持与同伴的通信
 func (g *Group) RegisterPeers(peers PeerPicker) {
 	if g.peers != nil {
 		panic("RegisterPeerPick called more than once") // 禁止重复注册同伴
@@ -79,17 +71,13 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
 	g.peers = peers
 }
 
-// Get 方法根据键获取缓存中的数据
-// 如果缓存中已经存在该值，将返回
-// 否则将加载这个数据
-// key: 需要获取的键
-// value: 获取的数据值
+// Get 方法根据键获取缓存中的数据;如果缓存中已经存在该值，将返回,否则将加载这个数据
 func (g *Group) Get(key string) (ByteView, error) {
 	if key == "" {
-		return ByteView{}, fmt.Errorf("key isn't existed") // 键为空，返回错误
+		return ByteView{}, fmt.Errorf("key isn't existed")
 	}
 	if v, ok := g.mainCache.get(key); ok {
-		log.Println("[Cache hit]") // 记录缓存命中的时刻
+		log.Println("[Cache hit]")
 		return v, nil
 	}
 	return g.load(key) // 如果缓存中不存在，通过回调函数进行加载
@@ -116,9 +104,6 @@ func (g *Group) load(key string) (value ByteView, err error) {
 }
 
 // getFromPeer 方法用于从同伴中获取指定键的数据
-// peer: PeerGetter
-// key: 需要获取的键
-// 返回应的 ByteView
 func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
 	bytes, err := peer.Get(g.name, key) // 远程同伴的 HTTPGetter
 	if err != nil {
@@ -128,21 +113,16 @@ func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
 }
 
 // getLocally 方法用于此地加载数据
-// key: 需要获取的键
-// 返回应的 ByteView
 func (g *Group) getLocally(key string) (ByteView, error) {
 	bytes, err := g.getter.Get(key)
 	if err != nil {
 		return ByteView{}, nil
 	}
 	value := ByteView{b: cloneBytes(bytes)}
-	g.populateCache(key, value) // 将此地加载的数据添加到主缓存中
+	g.populateCache(key, value)
 	return value, nil
 }
 
-// populateCache 方法用于将数据添加到主缓存中
-// key: 需要添加的键
-// value: 添加的值
 func (g *Group) populateCache(key string, value ByteView) {
 	g.mainCache.add(key, value)
 }

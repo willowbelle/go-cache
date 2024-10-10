@@ -19,13 +19,6 @@ This project implements a distributed caching solution inspired by common practi
 - `singleflight/`: Provides request deduplication to prevent multiple redundant loads for the same key.
 - `distributecache/`: Manages core caching functionality, including peer-to-peer communication and handling HTTP requests.
 
-## Interfaces for Remote Access
-
-- **PeerPicker** is used to pick a peer for a given key.
-- **PeerGetter** is used to get data from a remote peer.
-
-## How It Works
-
 ### Data Request Flow
 
 1. A client requests data for a given key.
@@ -72,4 +65,4 @@ To set up the distributed cache system:
 
 ## Acknowledgments
 
-This project was inspired by concepts from groupcache and articles from 极客兔兔. We appreciate their valuable insights and contributions.
+This project was inspired by concepts from groupcache and articles from tutu. We appreciate their valuable insights and contributions.
